@@ -1,2 +1,7 @@
 # av1-tech
-coding tools in AOM AV1 vidoe codec
+Coding tools study in AOM AV1 video codec.
+
+- `intrapred.py` visualize Intra-predictions
+
+## License
+MIT License

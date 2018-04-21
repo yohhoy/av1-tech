@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-#
-# Intra Prediction in AOM AV1 codec
-#
+"""
+Visualize Intra-predictions in AV1 codec
+
+Copyright (c) 2018 yohhoy
+"""
 import itertools
 import numpy as np
 import math
