@@ -26,5 +26,8 @@ Coding tools study in AOM AV1 video codec.
 |![DC_PEATH](image/intra-peath.png "intra-peath.png")|
 
 
+## Wedge mask
+![WedgeMask](image/wedge-mask.png "wedge-mask.png")
+
 ## License
 MIT License
