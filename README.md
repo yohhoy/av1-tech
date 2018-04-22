@@ -27,6 +27,10 @@ Coding tools study in AOM AV1 video codec.
 |![DC_PEATH](image/intra-peath.png "intra-peath.png")|
 
 
+Directional Intra prediction (8 mode x 7 delta angle):
+![Dnn_PRED](image/intra-directional.png "intra-directional.png")
+
+
 ## Wedge mask
 ![WedgeMask](image/wedge-mask.png "wedge-mask.png")
 

@@ -7,6 +7,7 @@ Copyright (c) 2018 yohhoy
 import itertools
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 
 
@@ -258,3 +259,19 @@ draw_pred(pred, AboveRow, LeftCol, "intra-smooth-h")  # mode=11
 
 pred = pred_peath(w, h, AboveRow, LeftCol)
 draw_pred(pred, AboveRow, LeftCol, "intra-peath")     # mode=12
+
+
+# visualize directional Intra-predictions
+fig, axs = plt.subplots(nrows=8, ncols=7, figsize=(6, 6))
+fig.suptitle('Directional Intra Predictions')
+fig.subplots_adjust(left=0.05, right=0.95, top=0.92, bottom=0.05, wspace=0.05)
+for ypos, mode in enumerate([3, 8, 1, 5, 4, 6, 2, 7]):  # 90, 180, 45, 135, 113, 157, 203, 67
+    for delta in range(7):
+        pred = pred_directional(w, h, AboveRow, LeftCol, mode, delta - 3)
+        pred = np.reshape(pred, pred.shape[:2])
+        ax = axs[ypos][delta]
+        plt.setp(ax.get_xticklabels(), visible=False)
+        plt.setp(ax.get_yticklabels(), visible=False)
+        ax.tick_params(axis='both', which='both', length=0)
+        ax.imshow(pred, cmap='Greys_r')
+fig.savefig('intra-directional.png')
