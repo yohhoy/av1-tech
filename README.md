@@ -2,6 +2,7 @@
 Coding tools study in AOM AV1 video codec.
 
 - `intrapred.py` visualize Intra-predictions
+- `wedgemask.py` visualize Wedge masks
 
 
 ## Intra prediction
@@ -28,6 +29,7 @@ Coding tools study in AOM AV1 video codec.
 
 ## Wedge mask
 ![WedgeMask](image/wedge-mask.png "wedge-mask.png")
+
 
 ## License
 MIT License
