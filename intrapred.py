@@ -21,13 +21,20 @@ def Round2(x, n):
     return (x + (1 << (n - 1))) >> n
 
 
+def Round2Signed(x, n):
+    if x >= 0:
+        return Round2(x, n)
+    else:
+        return -Round2(-x, n)
+
+
 # index adjustment for AboveRow/LeftCol
 def IDX(n):
     return n + 1
 
 
 # PAETH_PRED: Basic Intra Prediction Process
-def pred_peath(w, h, AboveRow, LeftCol):
+def pred_paeth(w, h, AboveRow, LeftCol):
     pred = np.zeros((h, w, 1), int)
     for i, j in itertools.product(range(h), range(w)):
         ar, lc, a0 = AboveRow[IDX(j)], LeftCol[IDX(i)], AboveRow[IDX(-1)]
@@ -196,6 +203,94 @@ def pred_smooth_h(w, h, AboveRow, LeftCol):
     return pred
 
 
+INTRA_FILTER_SCALE_BITS = 4
+FILTER_DC_PRED = 0
+FILTER_V_PRED = 1
+FILTER_H_PRED = 2
+FILTER_D157_PRED = 3
+FILTER_PAETH_PRED = 4
+Intra_Filter_Taps = [
+  [
+      [-6, 10, 0, 0, 0, 12, 0],
+      [-5, 2, 10, 0, 0, 9, 0],
+      [-3, 1, 1, 10, 0, 7, 0],
+      [-3, 1, 1, 2, 10, 5, 0],
+      [-4, 6, 0, 0, 0, 2, 12],
+      [-3, 2, 6, 0, 0, 2, 9],
+      [-3, 2, 2, 6, 0, 2, 7],
+      [-3, 1, 2, 2, 6, 3, 5],
+  ],
+  [
+      [-10, 16, 0, 0, 0, 10, 0],
+      [-6, 0, 16, 0, 0, 6, 0],
+      [-4, 0, 0, 16, 0, 4, 0],
+      [-2, 0, 0, 0, 16, 2, 0],
+      [-10, 16, 0, 0, 0, 0, 10],
+      [-6, 0, 16, 0, 0, 0, 6],
+      [-4, 0, 0, 16, 0, 0, 4],
+      [-2, 0, 0, 0, 16, 0, 2],
+  ],
+  [
+      [-8, 8, 0, 0, 0, 16, 0],
+      [-8, 0, 8, 0, 0, 16, 0],
+      [-8, 0, 0, 8, 0, 16, 0],
+      [-8, 0, 0, 0, 8, 16, 0],
+      [-4, 4, 0, 0, 0, 0, 16],
+      [-4, 0, 4, 0, 0, 0, 16],
+      [-4, 0, 0, 4, 0, 0, 16],
+      [-4, 0, 0, 0, 4, 0, 16],
+  ],
+  [
+      [-2, 8, 0, 0, 0, 10, 0],
+      [-1, 3, 8, 0, 0, 6, 0],
+      [-1, 2, 3, 8, 0, 4, 0],
+      [0, 1, 2, 3, 8, 2, 0],
+      [-1, 4, 0, 0, 0, 3, 10],
+      [-1, 3, 4, 0, 0, 4, 6],
+      [-1, 2, 3, 4, 0, 4, 4],
+      [-1, 2, 2, 3, 4, 3, 3],
+  ],
+  [
+      [-12, 14, 0, 0, 0, 14, 0],
+      [-10, 0, 14, 0, 0, 12, 0],
+      [-9, 0, 0, 14, 0, 11, 0],
+      [-8, 0, 0, 0, 14, 10, 0],
+      [-10, 12, 0, 0, 0, 0, 14],
+      [-9, 1, 12, 0, 0, 0, 12],
+      [-8, 0, 0, 12, 0, 1, 11],
+      [-7, 0, 0, 1, 12, 1, 9],
+  ]
+]
+
+
+# use_filter_intra==1: Recursive Intra Prediction Process
+def pred_recursive(w, h, AboveRow, LeftCol, filter_intra_mode):
+    pred = np.zeros((h, w, 1), int)
+    w4 = w >> 2
+    h2 = h >> 1
+    for i2, j4 in itertools.product(range(h2), range(w4)):
+        p = [0] * 7
+        for i in range(7):
+            if i < 5:
+                if i2 == 0:
+                    p[i] = AboveRow[IDX((j4 << 2) + i - 1)]
+                elif j4 == 0 and i == 0:
+                    p[i] = LeftCol[IDX((i2 << 1 ) - 1)]
+                else:
+                    p[i] = pred[(i2 << 1) - 1][(j4 << 2) + i - 1]
+            else:
+                if j4 == 0:
+                    p[i] = LeftCol[IDX((i2 << 1) + i - 5)]
+                else:
+                    p[i] = pred[(i2 << 1) + i - 5][(j4 << 2) - 1]
+        for i1, j1 in itertools.product(range(2), range(4)):
+            pr = 0
+            for i in range(7):
+                pr += Intra_Filter_Taps[filter_intra_mode][(i1 << 2) + j1][i] * p[i]
+            pred[(i2 << 1) + i1][(j4 << 2) + j1] = Clip1(Round2Signed(pr, INTRA_FILTER_SCALE_BITS))
+    return pred
+
+
 def draw_pred(pred, AboveRow, LeftCol, name):
     BSZ = 20
     sz = (LeftCol.shape[0] * BSZ, AboveRow.shape[0] * BSZ)
@@ -257,8 +352,20 @@ draw_pred(pred, AboveRow, LeftCol, "intra-smooth-v")  # mode=10
 pred = pred_smooth_h(w, h, AboveRow, LeftCol)
 draw_pred(pred, AboveRow, LeftCol, "intra-smooth-h")  # mode=11
 
-pred = pred_peath(w, h, AboveRow, LeftCol)
-draw_pred(pred, AboveRow, LeftCol, "intra-peath")     # mode=12
+pred = pred_paeth(w, h, AboveRow, LeftCol)
+draw_pred(pred, AboveRow, LeftCol, "intra-paeth")     # mode=12
+
+# recursive intra prediction family
+pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_DC_PRED)
+draw_pred(pred, AboveRow, LeftCol, "intra-recursive-dc")
+pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_V_PRED)
+draw_pred(pred, AboveRow, LeftCol, "intra-recursive-v")
+pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_H_PRED)
+draw_pred(pred, AboveRow, LeftCol, "intra-recursive-h")
+pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_D157_PRED)
+draw_pred(pred, AboveRow, LeftCol, "intra-recursive-d157")
+pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_PAETH_PRED)
+draw_pred(pred, AboveRow, LeftCol, "intra-recursive-paeth")
 
 
 # visualize directional Intra-predictions
