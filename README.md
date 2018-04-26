@@ -22,9 +22,9 @@ Coding tools study in AOM AV1 video codec.
 |:-----------:|:-------------:|:-------------:|
 |![SMOOTH_PRED](image/intra-smooth.png "intra-smooth.png")|![SMOOTH_V_PRED](image/intra-smooth-v.png "intra-smooth-v.png")|![SMOOTH_H_PRED](image/intra-smooth-h.png "intra-smooth-h.png")|
 
-|`DC_PEATH`|
+|`PAETH_PRED`|
 |:--------:|
-|![DC_PEATH](image/intra-peath.png "intra-peath.png")|
+|![PAETH_PRED](image/intra-paeth.png "intra-paeth.png")|
 
 
 Directional Intra prediction (8 mode x 7 delta angle):
