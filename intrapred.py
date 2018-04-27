@@ -28,16 +28,11 @@ def Round2Signed(x, n):
         return -Round2(-x, n)
 
 
-# index adjustment for AboveRow/LeftCol
-def IDX(n):
-    return n + 1
-
-
 # PAETH_PRED: Basic Intra Prediction Process
 def pred_paeth(w, h, AboveRow, LeftCol):
     pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
-        ar, lc, a0 = AboveRow[IDX(j)], LeftCol[IDX(i)], AboveRow[IDX(-1)]
+        ar, lc, a0 = AboveRow[j], LeftCol[i], AboveRow[-1]
         base = ar + lc - a0
         pLeft = np.abs(base - lc)
         pTop = np.abs(base - ar)
@@ -88,24 +83,24 @@ def pred_directional(w, h, AboveRow, LeftCol, mode, angleDelta):
             shift = ((idx << upsampleAbove) >> 1) & 0x1F
             maxBaseX = (w + h - 1) << upsampleAbove
             if base < maxBaseX:
-                pred[i][j] = Clip1(Round2(AboveRow[IDX(base)] * (32 - shift) +
-                                          AboveRow[IDX(base + 1)] * shift, 5))
+                pred[i][j] = Clip1(Round2(AboveRow[base] * (32 - shift) +
+                                          AboveRow[base + 1] * shift, 5))
             else:
-                pred[i][j] = AboveRow[IDX(maxBaseX)]
+                pred[i][j] = AboveRow[maxBaseX]
     elif 90 < pAngle < 180:
         for i, j in itertools.product(range(h), range(w)):
             idx = (j << 6) - (i + 1) * dx
             base = idx >> (6 - upsampleAbove)
             if -(1 << upsampleAbove) <= base:
                 shift = ((idx << upsampleAbove) >> 1) & 0x1F
-                pred[i][j] = Clip1(Round2(AboveRow[IDX(base)] * (32 - shift) +
-                                          AboveRow[IDX(base + 1)] * shift, 5))
+                pred[i][j] = Clip1(Round2(AboveRow[base] * (32 - shift) +
+                                          AboveRow[base + 1] * shift, 5))
             else:
                 idx = (i << 6) - (j + 1) * dy
                 base = idx >> (6 - upsampleLeft)
                 shift = ((idx << upsampleLeft) >> 1) & 0x1F
-                pred[i][j] = Clip1(Round2(LeftCol[IDX(base)] * (32 - shift) +
-                                          LeftCol[IDX(base + 1)] * shift, 5))
+                pred[i][j] = Clip1(Round2(LeftCol[base] * (32 - shift) +
+                                          LeftCol[base + 1] * shift, 5))
     elif 180 < pAngle < 270:
         for i, j in itertools.product(range(h), range(w)):
             idx = (j + 1) * dy
@@ -113,16 +108,16 @@ def pred_directional(w, h, AboveRow, LeftCol, mode, angleDelta):
             shift = ((idx << upsampleLeft) >> 1) & 0x1F
             maxBaseY = (w + h - 1) << upsampleLeft
             if base < maxBaseY:
-                pred[i][j] = Clip1(Round2(LeftCol[IDX(base)] * (32 - shift) +
-                                          LeftCol[IDX(base + 1)] * shift, 5))
+                pred[i][j] = Clip1(Round2(LeftCol[base] * (32 - shift) +
+                                          LeftCol[base + 1] * shift, 5))
             else:
-                pred[i][j] = LeftCol[IDX(maxBaseY)]
+                pred[i][j] = LeftCol[maxBaseY]
     elif pAngle == 90:
         for i, j in itertools.product(range(h), range(w)):
-            pred[i][j] = AboveRow[IDX(j)]
+            pred[i][j] = AboveRow[j]
     elif pAngle == 180:
         for i, j in itertools.product(range(h), range(w)):
-            pred[i][j] = LeftCol[IDX(i)]
+            pred[i][j] = LeftCol[i]
     return pred
 
 
@@ -130,9 +125,9 @@ def pred_directional(w, h, AboveRow, LeftCol, mode, angleDelta):
 def pred_DC(w, h, AboveRow, LeftCol):
     s = 0
     for k in range(h):
-        s += LeftCol[IDX(k)]
+        s += LeftCol[k]
     for k in range(w):
-        s += AboveRow[IDX(k)]
+        s += AboveRow[k]
     s += (w + h) >> 1
     avg = s // (w + h)
     pred = np.zeros((h, w), int)
@@ -173,10 +168,10 @@ def pred_smooth(w, h, AboveRow, LeftCol):
     smWeightsY = select_smWeights(h)
     pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
-        smoothPred = smWeightsY[i] * AboveRow[IDX(j)] + \
-                     (256 - smWeightsY[i]) * LeftCol[IDX(h - 1)] + \
-                     smWeightsX[j] * LeftCol[IDX(i)] + \
-                     (256 - smWeightsX[j]) * AboveRow[IDX(w - 1)]
+        smoothPred = smWeightsY[i] * AboveRow[j] + \
+                     (256 - smWeightsY[i]) * LeftCol[h - 1] + \
+                     smWeightsX[j] * LeftCol[i] + \
+                     (256 - smWeightsX[j]) * AboveRow[w - 1]
         pred[i][j] = Round2(smoothPred, 9)
     return pred
 
@@ -186,8 +181,8 @@ def pred_smooth_v(w, h, AboveRow, LeftCol):
     smWeights = select_smWeights(h)
     pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
-        smoothPred = smWeights[i] * AboveRow[IDX(j)] + \
-                     (256 - smWeights[i]) * LeftCol[IDX(h - 1)]
+        smoothPred = smWeights[i] * AboveRow[j] + \
+                     (256 - smWeights[i]) * LeftCol[h - 1]
         pred[i][j] = Round2(smoothPred, 8)
     return pred
 
@@ -197,8 +192,8 @@ def pred_smooth_h(w, h, AboveRow, LeftCol):
     smWeights = select_smWeights(w)
     pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
-        smoothPred = smWeights[j] * LeftCol[IDX(i)] + \
-                     (256 - smWeights[j]) * AboveRow[IDX(w - 1)]
+        smoothPred = smWeights[j] * LeftCol[i] + \
+                     (256 - smWeights[j]) * AboveRow[w - 1]
         pred[i][j] = Round2(smoothPred, 8)
     return pred
 
@@ -273,14 +268,14 @@ def pred_recursive(w, h, AboveRow, LeftCol, filter_intra_mode):
         for i in range(7):
             if i < 5:
                 if i2 == 0:
-                    p[i] = AboveRow[IDX((j4 << 2) + i - 1)]
+                    p[i] = AboveRow[(j4 << 2) + i - 1]
                 elif j4 == 0 and i == 0:
-                    p[i] = LeftCol[IDX((i2 << 1) - 1)]
+                    p[i] = LeftCol[(i2 << 1) - 1]
                 else:
                     p[i] = pred[(i2 << 1) - 1][(j4 << 2) + i - 1]
             else:
                 if j4 == 0:
-                    p[i] = LeftCol[IDX((i2 << 1) + i - 5)]
+                    p[i] = LeftCol[(i2 << 1) + i - 5]
                 else:
                     p[i] = pred[(i2 << 1) + i - 5][(j4 << 2) - 1]
         for i1, j1 in itertools.product(range(2), range(4)):
@@ -304,17 +299,18 @@ def draw_pred(pred, AboveRow, LeftCol, name):
     # draw AboveRow[x]
     for x in range(AboveRow.shape[0]):
         rc = np.array([x, 0, x + 1, 1]) * BSZ
-        draw.rectangle(tuple(rc), fill=(AboveRow[x],), outline=(0))
+        draw.rectangle(tuple(rc), fill=(AboveRow[x - 1],), outline=(0))
     # draw LeftCol[y]
     for y in range(LeftCol.shape[0]):
         rc = np.array([0, y, 1, y + 1]) * BSZ
-        draw.rectangle(tuple(rc), fill=(LeftCol[y],), outline=(0))
+        draw.rectangle(tuple(rc), fill=(LeftCol[y - 1],), outline=(0))
     img.save(name + '.png')
 
 
-w = h = 4
-IntraRefLine = 2
+w = h = 8
+IntraRefLine = 1
 
+# setup referenced AboveRow/LeftCol
 if IntraRefLine == 0:
     # simple gradation
     def line_gradation(sv, ev, step):
@@ -334,6 +330,10 @@ elif IntraRefLine == 2:
         return np.array([((k + c) // c) % 2 * 255 for k in range(step)], int)
     AboveRow = line_edge(w, 1 + w + h)
     LeftCol = line_edge(h, 1 + w + h)
+
+# AboveRow[-1] == LeftCol[-1] == above-right sample
+AboveRow = np.roll(AboveRow, -1)
+LeftCol = np.roll(LeftCol, -1)
 
 
 # visualize Intra-predictions
