@@ -364,8 +364,8 @@ RecursiveIntraPred = {
     FILTER_D157_PRED: "d157", FILTER_PAETH_PRED: "paeth",
 }
 for mode, name in RecursiveIntraPred.items():
-    draw_pred(pred, AboveRow, LeftCol, f'intra-recursive-{name}')
     pred = pred_recursive(w, h, AboveRow, LeftCol, mode)
+    draw_pred(pred, AboveRow, LeftCol, f'intra-recursive-{name}')
 
 
 # visualize directional Intra-predictions
