@@ -35,7 +35,7 @@ def IDX(n):
 
 # PAETH_PRED: Basic Intra Prediction Process
 def pred_paeth(w, h, AboveRow, LeftCol):
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
         ar, lc, a0 = AboveRow[IDX(j)], LeftCol[IDX(i)], AboveRow[IDX(-1)]
         base = ar + lc - a0
@@ -80,7 +80,7 @@ def pred_directional(w, h, AboveRow, LeftCol, mode, angleDelta):
     elif 180 < pAngle < 270:
         dy = Dr_Intra_Derivative[270 - pAngle]
 
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     if 0 < pAngle < 90:
         for i, j in itertools.product(range(h), range(w)):
             idx = (i + 1) * dx
@@ -135,7 +135,7 @@ def pred_DC(w, h, AboveRow, LeftCol):
         s += AboveRow[IDX(k)]
     s += (w + h) >> 1
     avg = s // (w + h)
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     pred[:] = avg
     return pred
 
@@ -171,7 +171,7 @@ def select_smWeights(n):
 def pred_smooth(w, h, AboveRow, LeftCol):
     smWeightsX = select_smWeights(w)
     smWeightsY = select_smWeights(h)
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
         smoothPred = smWeightsY[i] * AboveRow[IDX(j)] + \
                      (256 - smWeightsY[i]) * LeftCol[IDX(h - 1)] + \
@@ -184,7 +184,7 @@ def pred_smooth(w, h, AboveRow, LeftCol):
 # SMOOTH_V_PRED: Smooth Intra Prediction Process
 def pred_smooth_v(w, h, AboveRow, LeftCol):
     smWeights = select_smWeights(h)
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
         smoothPred = smWeights[i] * AboveRow[IDX(j)] + \
                      (256 - smWeights[i]) * LeftCol[IDX(h - 1)]
@@ -195,7 +195,7 @@ def pred_smooth_v(w, h, AboveRow, LeftCol):
 # SMOOTH_H_PRED: Smooth Intra Prediction Process
 def pred_smooth_h(w, h, AboveRow, LeftCol):
     smWeights = select_smWeights(w)
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     for i, j in itertools.product(range(h), range(w)):
         smoothPred = smWeights[j] * LeftCol[IDX(i)] + \
                      (256 - smWeights[j]) * AboveRow[IDX(w - 1)]
@@ -265,7 +265,7 @@ Intra_Filter_Taps = [
 
 # use_filter_intra==1: Recursive Intra Prediction Process
 def pred_recursive(w, h, AboveRow, LeftCol, filter_intra_mode):
-    pred = np.zeros((h, w, 1), int)
+    pred = np.zeros((h, w), int)
     w4 = w >> 2
     h2 = h >> 1
     for i2, j4 in itertools.product(range(h2), range(w4)):
@@ -275,7 +275,7 @@ def pred_recursive(w, h, AboveRow, LeftCol, filter_intra_mode):
                 if i2 == 0:
                     p[i] = AboveRow[IDX((j4 << 2) + i - 1)]
                 elif j4 == 0 and i == 0:
-                    p[i] = LeftCol[IDX((i2 << 1 ) - 1)]
+                    p[i] = LeftCol[IDX((i2 << 1) - 1)]
                 else:
                     p[i] = pred[(i2 << 1) - 1][(j4 << 2) + i - 1]
             else:
@@ -300,37 +300,40 @@ def draw_pred(pred, AboveRow, LeftCol, name):
     h, w = pred.shape[:2]
     for x, y in itertools.product(range(w), range(h)):
         rc = np.array([x + 1, y + 1, x + 2, y + 2]) * BSZ
-        draw.rectangle(tuple(rc), fill=tuple(pred[y][x]))
+        draw.rectangle(tuple(rc), fill=(pred[y][x],))
     # draw AboveRow[x]
     for x in range(AboveRow.shape[0]):
         rc = np.array([x, 0, x + 1, 1]) * BSZ
-        draw.rectangle(tuple(rc), fill=tuple(AboveRow[x]), outline=(0))
+        draw.rectangle(tuple(rc), fill=(AboveRow[x],), outline=(0))
     # draw LeftCol[y]
     for y in range(LeftCol.shape[0]):
         rc = np.array([0, y, 1, y + 1]) * BSZ
-        draw.rectangle(tuple(rc), fill=tuple(LeftCol[y]), outline=(0))
+        draw.rectangle(tuple(rc), fill=(LeftCol[y],), outline=(0))
     img.save(name + '.png')
 
 
-def line_gradation(sv, ev, step):
-    return np.array([sv + (ev - sv) * k // (step - 1) for k in range(step)], int)
-
-
-def line_cyclic(t, step):
-    return np.array([[127 * (1 + math.cos(math.pi * k * 2 / t))] for k in range(step)], int)
-
-
 w = h = 4
+IntraRefLine = 2
 
-# gradation
-anchor_bl = np.array([255])  # Bottom-Left
-anchor_al = np.array([128])  # Above-Left
-anchor_ar = np.array([0])    # Above-Right
-AboveRow = line_gradation(anchor_al, anchor_ar, 1 + w + h)
-LeftCol = line_gradation(anchor_al, anchor_bl, 1 + w + h)
-# cyclic
-#AboveRow = line_cyclic(w, 1 + w + h)
-#LeftCol = line_cyclic(h, 1 + w + h)
+if IntraRefLine == 0:
+    # simple gradation
+    def line_gradation(sv, ev, step):
+        return np.array([sv + (ev - sv) * k // (step - 1) for k in range(step)], int)
+    AboveRow = line_gradation(128, 0, 1 + w + h)
+    LeftCol = line_gradation(128, 255, 1 + w + h)
+elif IntraRefLine == 1:
+    # cyclic gradation
+    def line_cyclic(t, step):
+        return np.array([127 * (1 + math.cos(math.pi * k * 2 / t)) for k in range(step)], int)
+    AboveRow = line_cyclic(w, 1 + w + h)
+    LeftCol = line_cyclic(h, 1 + w + h)
+elif IntraRefLine == 2:
+    # edge
+    def line_edge(t, step):
+        c = t // 4
+        return np.array([((k + c) // c) % 2 * 255 for k in range(step)], int)
+    AboveRow = line_edge(w, 1 + w + h)
+    LeftCol = line_edge(h, 1 + w + h)
 
 
 # visualize Intra-predictions
@@ -356,16 +359,13 @@ pred = pred_paeth(w, h, AboveRow, LeftCol)
 draw_pred(pred, AboveRow, LeftCol, "intra-paeth")     # mode=12
 
 # recursive intra prediction family
-pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_DC_PRED)
-draw_pred(pred, AboveRow, LeftCol, "intra-recursive-dc")
-pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_V_PRED)
-draw_pred(pred, AboveRow, LeftCol, "intra-recursive-v")
-pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_H_PRED)
-draw_pred(pred, AboveRow, LeftCol, "intra-recursive-h")
-pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_D157_PRED)
-draw_pred(pred, AboveRow, LeftCol, "intra-recursive-d157")
-pred = pred_recursive(w, h, AboveRow, LeftCol, FILTER_PAETH_PRED)
-draw_pred(pred, AboveRow, LeftCol, "intra-recursive-paeth")
+RecursiveIntraPred = {
+    FILTER_DC_PRED: "dc", FILTER_V_PRED: "v", FILTER_H_PRED: "h",
+    FILTER_D157_PRED: "d157", FILTER_PAETH_PRED: "paeth",
+}
+for mode, name in RecursiveIntraPred.items():
+    draw_pred(pred, AboveRow, LeftCol, f'intra-recursive-{name}')
+    pred = pred_recursive(w, h, AboveRow, LeftCol, mode)
 
 
 # visualize directional Intra-predictions
@@ -375,7 +375,6 @@ fig.subplots_adjust(left=0.05, right=0.95, top=0.92, bottom=0.05, wspace=0.05)
 for ypos, mode in enumerate([3, 8, 1, 5, 4, 6, 2, 7]):  # 90, 180, 45, 135, 113, 157, 203, 67
     for delta in range(7):
         pred = pred_directional(w, h, AboveRow, LeftCol, mode, delta - 3)
-        pred = np.reshape(pred, pred.shape[:2])
         ax = axs[ypos][delta]
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
