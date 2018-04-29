@@ -176,6 +176,6 @@ for wedge_index in range(WEDGE_TYPES):
     plt.setp(ax.get_xticklabels(), visible=False)
     plt.setp(ax.get_yticklabels(), visible=False)
     ax.tick_params(axis='both', which='both', length=0)
-    ax.imshow(mask, cmap='Greys_r')
+    ax.imshow(mask, cmap='Greys_r', vmin=0, vmax=64)
 
 plt.savefig('wedge-mask.png')

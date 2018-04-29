@@ -379,5 +379,5 @@ for ypos, mode in enumerate([3, 8, 1, 5, 4, 6, 2, 7]):  # 90, 180, 45, 135, 113,
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
         ax.tick_params(axis='both', which='both', length=0)
-        ax.imshow(pred, cmap='Greys_r')
+        ax.imshow(pred, cmap='Greys_r', vmin=0, vmax=255)
 fig.savefig('intra-directional.png')
