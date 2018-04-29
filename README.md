@@ -2,10 +2,11 @@
 Coding tools study in AOM AV1 video codec.
 
 - `intrapred.py` visualize Intra-predictions
-- `wedgemask.py` visualize Wedge masks
+- `maskwedge.py` visualize Wedge masks
+- `maskintramodevar.py` visualize Intra mode variant masks
 
 
-## Intra prediction
+## Intra predictions
 |`DC_PRED`|`V_PRED`|`H_PRED`|
 |:-------:|:------:|:------:|
 |![DC_PRED](image/intra-dc.png "intra-dc.png")|![V_PRED](image/intra-d090.png "intra-d090.png")|![H_PRED](image/intra-d180.png "intra-d180.png")|
@@ -31,8 +32,12 @@ Directional Intra prediction (8 mode x 7 delta angle):
 ![Dnn_PRED](image/intra-directional.png "intra-directional.png")
 
 
-## Wedge mask
-![WedgeMask](image/wedge-mask.png "wedge-mask.png")
+## Wedge masks
+![WedgeMask](image/mask-wedge.png "mask-wedge.png")
+
+
+## Intra mode variant masks
+![IntraModeVariantMask](image/mask-intramodevar.png "mask-intramodevar.png")
 
 
 ## License
