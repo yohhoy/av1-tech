@@ -165,7 +165,7 @@ def mask_wedge(MiSize, wedge_index, wedge_sign=0):
     return mask
 
 
-fig, axs = plt.subplots(nrows=4, ncols=4)
+fig, axs = plt.subplots(nrows=4, ncols=4, figsize=(4, 4.5))
 fig.suptitle('Wedge masks')
 fig.subplots_adjust(hspace=0.4)
 
@@ -178,4 +178,4 @@ for wedge_index in range(WEDGE_TYPES):
     ax.tick_params(axis='both', which='both', length=0)
     ax.imshow(mask, cmap='Greys_r', vmin=0, vmax=64)
 
-plt.savefig('wedge-mask.png')
+plt.savefig('mask-wedge.png')
